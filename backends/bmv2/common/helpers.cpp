@@ -24,8 +24,13 @@ const cstring TableImplementation::actionSelectorName = "action_selector";
 const cstring MatchImplementation::selectorMatchTypeName = "selector";
 const cstring MatchImplementation::rangeMatchTypeName = "range";
 const unsigned TableAttributes::defaultTableSize = 1024;
+
+// XXX: this seems to be deprecated
 const cstring V1ModelProperties::jsonMetadataParameterName = "standard_metadata";
+
 const cstring V1ModelProperties::validField = "$valid$";
+
+
 
 Util::IJson* nodeName(const CFG::Node* node) {
     if (node->name.isNullOrEmpty())
@@ -83,5 +88,3 @@ unsigned nextId(cstring group) {
 }
 
 }  // namespace BMV2
-
-

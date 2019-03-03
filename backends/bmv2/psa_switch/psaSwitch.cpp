@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+#include "backends/bmv2/common/annotations.h"
 #include "frontends/common/model.h"
 #include "psaSwitch.h"
 
@@ -92,11 +93,19 @@ void PsaProgramStructure::createStructLike(ConversionContext* ctxt, const IR::Ty
 }
 
 void PsaProgramStructure::createTypes(ConversionContext* ctxt) {
-    for (auto kv : header_types)
+    std::cout << "trying headers now\n";
+    for (auto kv : header_types) {
+        std::cout << "----- HEADER TYPE " << kv.second->name << " -----\n";
         createStructLike(ctxt, kv.second);
-    for (auto kv : metadata_types)
+    }
+    std::cout << "trying metadata now\n";
+    for (auto kv : metadata_types) {
+        std::cout << "----- META TYPE " << kv.second->name << " -----\n";
         createStructLike(ctxt, kv.second);
+    }
+    std::cout << "trying unions now\n";
     for (auto kv : header_union_types) {
+        std::cout << "----- UNION TYPE " << kv.second->name << " -----\n";
         auto st = kv.second;
         auto fields = new Util::JsonArray();
         for (auto f : st->fields) {
@@ -431,6 +440,7 @@ void PsaSwitchBackend::convert(const IR::ToplevelBlock* tlb) {
     PassManager simplify = {
         /* TODO */
         // new RenameUserMetadata(refMap, userMetaType, userMetaName),
+        new ParseAnnotations(),
         new P4::ClearTypeMap(typeMap),  // because the user metadata type has changed
         // new P4::SynthesizeActions(refMap, typeMap, new SkipControls(&non_pipeline_controls)),
         new P4::MoveActionsToTables(refMap, typeMap),

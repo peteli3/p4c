@@ -239,6 +239,8 @@ void ExpressionConverter::postorder(const IR::Member* expression)  {
     cstring fieldName = expression->member.name;
     auto type = typeMap->getType(expression, true);
 
+    std::cout << "->>>>>> WORKING ON FIELD " << fieldName << "\n";
+
     if (parentType->is<IR::Type_StructLike>()) {
         auto st = parentType->to<IR::Type_StructLike>();
         auto field = st->getField(expression->member);
@@ -262,6 +264,7 @@ void ExpressionConverter::postorder(const IR::Member* expression)  {
     if (param != nullptr) {
         // convert architecture-dependent parameter
         if (auto result = convertParam(param, fieldName)) {
+
             mapExpression(expression, result);
             return;
         }
@@ -290,6 +293,10 @@ void ExpressionConverter::postorder(const IR::Member* expression)  {
                     type->is<IR::Type_Boolean>())) {
             auto field = parentType->to<IR::Type_StructLike>()->getField(
                 expression->member);
+
+            // XXX: DEBUG
+            std::cout << "->>>>>>>> looking up field " << field;
+
             LOG3("looking up field " << field);
             CHECK_NULL(field);
             auto name = ::get(structure->scalarMetadataFields, field);
