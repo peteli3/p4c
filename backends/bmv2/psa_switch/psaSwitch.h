@@ -41,78 +41,150 @@ limitations under the License.
 
 namespace BMV2 {
 
+  class PsaProgramStructure : public ProgramStructure {
+      P4::ReferenceMap*    refMap;
+      P4::TypeMap*         typeMap;
+
+   public:
+      // We place scalar user metadata fields (i.e., bit<>, bool)
+      // in the scalarsName metadata object, so we may need to rename
+      // these fields.  This map holds the new names.
+      std::vector<const IR::StructField*> scalars;
+      unsigned                            scalars_width = 0;
+      unsigned                            error_width = 32;
+      unsigned                            bool_width = 1;
+
+      // architecture related information
+      ordered_map<const IR::Node*, std::pair<gress_t, block_t>> block_type;
+
+      ordered_map<cstring, const IR::Type_Header*> header_types;
+      ordered_map<cstring, const IR::Type_Struct*> metadata_types;
+      ordered_map<cstring, const IR::Type_HeaderUnion*> header_union_types;
+      ordered_map<cstring, const IR::Declaration_Variable*> headers;
+      ordered_map<cstring, const IR::Declaration_Variable*> metadata;
+      ordered_map<cstring, const IR::Declaration_Variable*> header_stacks;
+      ordered_map<cstring, const IR::Declaration_Variable*> header_unions;
+      ordered_map<cstring, const IR::Type_Error*> errors;
+      ordered_map<cstring, const IR::Type_Enum*> enums;
+      ordered_map<cstring, const IR::P4Parser*> parsers;
+      ordered_map<cstring, const IR::P4ValueSet*> parse_vsets;
+      ordered_map<cstring, const IR::P4Control*> deparsers;
+      ordered_map<cstring, const IR::P4Control*> pipelines;
+      ordered_map<cstring, const IR::Declaration_Instance*> extern_instances;
+      ordered_map<cstring, cstring> field_aliases;
+
+      std::vector<const IR::ExternBlock*> globals;
+
+   public:
+      PsaProgramStructure(P4::ReferenceMap* refMap, P4::TypeMap* typeMap)
+          : refMap(refMap), typeMap(typeMap) {
+          CHECK_NULL(refMap);
+          CHECK_NULL(typeMap);
+      }
+
+      void create(ConversionContext* ctxt);
+      void createStructLike(ConversionContext* ctxt, const IR::Type_StructLike* st);
+      void createTypes(ConversionContext* ctxt);
+      void createHeaders(ConversionContext* ctxt);
+      void createParsers(ConversionContext* ctxt);
+      void createExterns();
+      void createActions(ConversionContext* ctxt);
+      void createControls(ConversionContext* ctxt);
+      void createDeparsers(ConversionContext* ctxt);
+      void createGlobals();
+
+      bool hasVisited(const IR::Type_StructLike* st) {
+          if (auto h = st->to<IR::Type_Header>())
+              return header_types.count(h->getName());
+          else if (auto s = st->to<IR::Type_Struct>())
+              return metadata_types.count(s->getName());
+          else if (auto u = st->to<IR::Type_HeaderUnion>())
+              return header_union_types.count(u->getName());
+          return false;
+      }
+  };
+
 class PsaSwitchExpressionConverter : public ExpressionConverter {
+  PsaProgramStructure* structure;
+
  public:
     PsaSwitchExpressionConverter(P4::ReferenceMap* refMap, P4::TypeMap* typeMap,
-                                 ProgramStructure* structure, cstring scalarsName) :
-    BMV2::ExpressionConverter(refMap, typeMap, structure, scalarsName) { }
+      PsaProgramStructure* structure, cstring scalarsName) :
+      BMV2::ExpressionConverter(refMap, typeMap, structure, scalarsName), structure(structure) { }
 
-    Util::IJson* convertParam(UNUSED const IR::Parameter* param, cstring fieldName) override {
+    void modelError(const char* format, const IR::Node* node) {
+        ::error(format, node);
+        ::error("Are you using an up-to-date v1model.p4?");
+    }
+
+    void structuralError(const char* msg) {
+        ::error(msg);
+    }
+
+    bool isStandardMetadataParameter(const IR::Parameter* param) {
+        // XXX: THIS ONLY DOES THE FIRST PARSER - NEED TO GET OTHERS
+        auto st = dynamic_cast<PsaProgramStructure*>(structure);
+
+        // INGRESS PARSER
+        auto ingress_parser = st->parsers.find("ingress");
+        if (ingress_parser == st->parsers.end()) // should never reach this
+          structuralError("PSA structural error: ingress parser not found");
+        std::cout << "->>> checking " << ingress_parser->first << " pipeline now\n";
+
+        auto params = ingress_parser->second->getApplyParameters();
+        if (params->size() != 6) {
+            modelError("%1%: Expected 6 parameters for parser", ingress_parser->second);
+            return false;
+        }
+        if (params->parameters.at(3) == param) { // this check is 0-indexed
+          std::cout << "->>> FOUND STD METADATA PARAM!\n";
+          return true;
+        }
+
+        // EGRESS PARSER
+        auto egress_parser = st->parsers.find("egress");
+        if (egress_parser == st->parsers.end()) // should never reach this
+          structuralError("PSA structural error: egress parser not found");
+        std::cout << "->>> checking " << egress_parser->first << " pipeline now\n";
+
+        params = egress_parser->second->getApplyParameters();
+        if (params->size() != 7) {
+            modelError("%1%: Expected 7 parameters for parser", egress_parser->second);
+            return false;
+        }
+        if (params->parameters.at(3) == param) { // this check is 0-indexed
+          std::cout << "->>> FOUND STD METADATA PARAM!\n";
+          return true;
+        }
+
+        // INGRESS
+        auto ingress = st->pipelines.find("ingress");
+        if (ingress == st->pipelines.end())
+          structuralError("PSA structural error: ingress control not found");
+        std::cout << "->>> checking " << ingress->first << " control now\n";
+
+        // EGRESS
+        auto egress = st->pipelines.find("egress");
+        if (egress == st->pipelines.end())
+          structuralError("PSA structural error: ingress control not found");
+        std::cout << "->>> checking " << egress->first << " control now\n";
+
+        return false;
+    }
+
+    Util::IJson* convertParam(const IR::Parameter* param, cstring fieldName) override {
+        std::cout << "starting checking now " << fieldName << "\n";
+        if (isStandardMetadataParameter(param)) {
+            auto result = new Util::JsonObject();
+            result->emplace("type", "field");
+            auto e = BMV2::mkArrayField(result, "value");
+            e->append("psa_metadata");
+            e->append(fieldName);
+            return result;
+        }
+        std::cout << "made it out of stdmetadata check\n";
         LOG3("convert " << fieldName);
         return nullptr;
-    }
-};
-
-class PsaProgramStructure : public ProgramStructure {
-    P4::ReferenceMap*    refMap;
-    P4::TypeMap*         typeMap;
-
- public:
-    // We place scalar user metadata fields (i.e., bit<>, bool)
-    // in the scalarsName metadata object, so we may need to rename
-    // these fields.  This map holds the new names.
-    std::vector<const IR::StructField*> scalars;
-    unsigned                            scalars_width = 0;
-    unsigned                            error_width = 32;
-    unsigned                            bool_width = 1;
-
-    // architecture related information
-    ordered_map<const IR::Node*, std::pair<gress_t, block_t>> block_type;
-
-    ordered_map<cstring, const IR::Type_Header*> header_types;
-    ordered_map<cstring, const IR::Type_Struct*> metadata_types;
-    ordered_map<cstring, const IR::Type_HeaderUnion*> header_union_types;
-    ordered_map<cstring, const IR::Declaration_Variable*> headers;
-    ordered_map<cstring, const IR::Declaration_Variable*> metadata;
-    ordered_map<cstring, const IR::Declaration_Variable*> header_stacks;
-    ordered_map<cstring, const IR::Declaration_Variable*> header_unions;
-    ordered_map<cstring, const IR::Type_Error*> errors;
-    ordered_map<cstring, const IR::Type_Enum*> enums;
-    ordered_map<cstring, const IR::P4Parser*> parsers;
-    ordered_map<cstring, const IR::P4ValueSet*> parse_vsets;
-    ordered_map<cstring, const IR::P4Control*> deparsers;
-    ordered_map<cstring, const IR::P4Control*> pipelines;
-    ordered_map<cstring, const IR::Declaration_Instance*> extern_instances;
-    ordered_map<cstring, cstring> field_aliases;
-
-    std::vector<const IR::ExternBlock*> globals;
-
- public:
-    PsaProgramStructure(P4::ReferenceMap* refMap, P4::TypeMap* typeMap)
-        : refMap(refMap), typeMap(typeMap) {
-        CHECK_NULL(refMap);
-        CHECK_NULL(typeMap);
-    }
-
-    void create(ConversionContext* ctxt);
-    void createStructLike(ConversionContext* ctxt, const IR::Type_StructLike* st);
-    void createTypes(ConversionContext* ctxt);
-    void createHeaders(ConversionContext* ctxt);
-    void createParsers(ConversionContext* ctxt);
-    void createExterns();
-    void createActions(ConversionContext* ctxt);
-    void createControls(ConversionContext* ctxt);
-    void createDeparsers(ConversionContext* ctxt);
-    void createGlobals();
-
-    bool hasVisited(const IR::Type_StructLike* st) {
-        if (auto h = st->to<IR::Type_Header>())
-            return header_types.count(h->getName());
-        else if (auto s = st->to<IR::Type_Struct>())
-            return metadata_types.count(s->getName());
-        else if (auto u = st->to<IR::Type_HeaderUnion>())
-            return header_union_types.count(u->getName());
-        return false;
     }
 };
 
