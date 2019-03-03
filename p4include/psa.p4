@@ -279,16 +279,19 @@ enum PSA_PacketPath_t {
     RECIRCULATE /// Packet arrival is the result of a recirculate operation
 }
 
+@metadata @name("psa_metadata")
 struct psa_ingress_parser_input_metadata_t {
   PortId_t                 ingress_port;
   PSA_PacketPath_t         packet_path;
 }
 
+@metadata @name("psa_metadata")
 struct psa_egress_parser_input_metadata_t {
   PortId_t                 egress_port;
   PSA_PacketPath_t         packet_path;
 }
 
+@metadata @name("psa_metadata")
 struct psa_ingress_input_metadata_t {
   // All of these values are initialized by the architecture before
   // the Ingress control block begins executing.
@@ -297,7 +300,9 @@ struct psa_ingress_input_metadata_t {
   Timestamp_t              ingress_timestamp;
   ParserError_t            parser_error;
 }
+
 // BEGIN:Metadata_ingress_output
+@metadata @name("psa_metadata")
 struct psa_ingress_output_metadata_t {
   // The comment after each field specifies its initial value when the
   // Ingress control block begins executing.
@@ -309,7 +314,9 @@ struct psa_ingress_output_metadata_t {
   MulticastGroup_t         multicast_group;  // 0
   PortId_t                 egress_port;      // initial value is undefined
 }
+
 // END:Metadata_ingress_output
+@metadata @name("psa_metadata")
 struct psa_egress_input_metadata_t {
   ClassOfService_t         class_of_service;
   PortId_t                 egress_port;
@@ -322,10 +329,13 @@ struct psa_egress_input_metadata_t {
 /// This struct is an 'in' parameter to the egress deparser.  It
 /// includes enough data for the egress deparser to distinguish
 /// whether the packet should be recirculated or not.
+@metadata @name("psa_metadata")
 struct psa_egress_deparser_input_metadata_t {
   PortId_t                 egress_port;
 }
+
 // BEGIN:Metadata_egress_output
+@metadata @name("psa_metadata")
 struct psa_egress_output_metadata_t {
   // The comment after each field specifies its initial value when the
   // Egress control block begins executing.
