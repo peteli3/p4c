@@ -661,10 +661,11 @@ getMatchFields(const IR::P4Table* table, ReferenceMap* refMap, TypeMap* typeMap)
           typeMap->getType(keyElement->expression->getNode(), true);
         BUG_CHECK(matchFieldType != nullptr,
                   "Couldn't determine type for key element %1%", keyElement);
-
+        while (auto mt = matchFieldType->to<IR::Type_Newtype>())
+            matchFieldType = typeMap->getTypeType(mt->type, true);
+        unsigned width = matchFieldType->width_bits();
         matchFields.push_back(MatchField{*matchFieldName, *matchType, matchTypeName,
-                                         uint32_t(matchFieldType->width_bits()),
-                                         keyElement->to<IR::IAnnotated>()});
+                                         uint32_t(width), keyElement->to<IR::IAnnotated>()});
     }
 
     return matchFields;
@@ -832,7 +833,7 @@ class P4RuntimeAnalyzer {
 
         bool isConstTable = getConstTable(tableDeclaration);
 
-        auto name = tableDeclaration->controlPlaneName();
+        auto name = archHandler->getControlPlaneName(tableBlock);
         auto annotations = tableDeclaration->to<IR::IAnnotated>();
 
         auto table = p4Info->add_tables();
@@ -1148,8 +1149,9 @@ static void collectTableSymbols(P4RuntimeSymbolTable& symbols,
                                 P4RuntimeArchHandlerIface* archHandler,
                                 const IR::TableBlock* tableBlock) {
     CHECK_NULL(tableBlock);
-    auto table = tableBlock->container;
-    symbols.add(P4RuntimeSymbolType::TABLE(), table);
+    auto name = archHandler->getControlPlaneName(tableBlock);
+    auto id = externalId(tableBlock->container);
+    symbols.add(P4RuntimeSymbolType::TABLE(), name, id);
     archHandler->collectTableProperties(&symbols, tableBlock);
 }
 
