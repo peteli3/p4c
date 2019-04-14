@@ -54,6 +54,12 @@ control cIngress(inout headers_t hdr,
                  in    psa_ingress_input_metadata_t  istd,
                  inout psa_ingress_output_metadata_t ostd)
 {
+    action do_recirc () {
+      hdr.ethernet.srcAddr = hdr.ethernet.dstAddr;
+    }
+    table t {
+            actions = { do_recirc; }
+        }
     apply {
         // Direct packets out of ports 0 through 3, based
         // upon the 2 least significant bits of the Ethernet
@@ -67,6 +73,7 @@ control cIngress(inout headers_t hdr,
             // out of port 0.
             ingress_drop(ostd);
         }
+        t.apply();
     }
 }
 
