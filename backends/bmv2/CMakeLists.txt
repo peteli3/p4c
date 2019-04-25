@@ -119,6 +119,7 @@ p4c_find_tests("${P4TESTS_FOR_V1MODEL}" v1tests INCLUDE "${V1_INCLUDE_PATTERNS}"
 
 set (BMV2_V1MODEL_TEST_SUITES
   "${P4C_SOURCE_DIR}/testdata/p4_16_bmv_errors/*-bmv2.p4"
+  "${P4C_SOURCE_DIR}/testdata/p4_16_samples/fabric_*/fabric.p4"
   "${P4C_SOURCE_DIR}/testdata/p4_14_samples/switch_*/switch.p4"
   "${P4C_SOURCE_DIR}/testdata/p4_14_samples/*.p4"
   ${v1tests}
@@ -144,11 +145,6 @@ set (XFAIL_TESTS
   testdata/p4_14_samples/issue60.p4
   # compiler claims (incorrectly?) that c2 has mulitple successors, so is not supported
   testdata/p4_14_samples/issue-1426.p4
-  # As of 2019-Feb-04 latest p4c, this program fails due to the root
-  # cause of both issues #1694, but is not affected by #1669.  I have
-  # tested it with the proposed fix for issue #1694 that is on PR
-  # #1704, and it passes.
-  testdata/p4_14_samples/p414-special-ops-3-bmv2.p4
   # As of 2019-Feb-04 latest p4c code, this program fails due to the
   # root cause of both issues #1694 and #1669.  I have tested it with
   # the proposed fix for issue #1694 that is on PR #1704, and while
@@ -177,7 +173,6 @@ set (XFAIL_TESTS
   testdata/p4_16_samples/psa-example-counters-bmv2.p4
   testdata/p4_16_samples/psa-example-digest-bmv2.p4
   testdata/p4_16_samples/psa-example-register2-bmv2.p4
-  # testdata/p4_16_samples/psa-fwd-bmv2.p4
   # This reads stack.next
   testdata/p4_16_samples/issue692-bmv2.p4
   # These test use computations in the verify/update checksum controls - unsupported
@@ -187,7 +182,6 @@ set (XFAIL_TESTS
   testdata/p4_16_samples/psa-drop-all-bmv2.p4
   testdata/p4_16_samples/psa-unicast-or-drop-bmv2.p4
   testdata/p4_16_samples/psa-ingress-input-meta-bmv2.p4
-  testdata/p4_16_samples/psa-multicast-basic-bmv2.p4
 )
 
 if (HAVE_SIMPLE_SWITCH)
