@@ -111,15 +111,15 @@ control cEgress(inout headers_t hdr,
         hdr.ipv4.version = (bit<4>) 0x6;
         hdr.ipv4.ihl = (bit<4>) 0xf;
         hdr.ipv4.diffserv = (bit<8>) 0x6d;
-        hdr.ipv4.totalLen = (bit<16>) 0x2074;
-        hdr.ipv4.identification = (bit<16>) 0x6865;
-        hdr.ipv4.flags = (bit<3>) 0x1;
-        hdr.ipv4.fragOffset = (bit<13>) 0x0070;
-        hdr.ipv4.ttl = (bit<8>) 0x34;
-        hdr.ipv4.protocol = (bit<8>) 0x20;
-        hdr.ipv4.hdrChecksum = (bit<16>) 0x776f;
-        hdr.ipv4.srcAddr = (bit<32>) 0x726b7368;
-        hdr.ipv4.dstAddr = (bit<32>) 0x6f700000;
+        hdr.ipv4.totalLen = (bit<16>) 0x2070;
+        hdr.ipv4.identification = (bit<16>) 0x3420;
+        hdr.ipv4.flags = (bit<3>) 0x3;
+        hdr.ipv4.fragOffset = (bit<13>) 0x176f;
+        hdr.ipv4.ttl = (bit<8>) 0x72;
+        hdr.ipv4.protocol = (bit<8>) 0x6b;
+        hdr.ipv4.hdrChecksum = (bit<16>) 0x7368;
+        hdr.ipv4.srcAddr = (bit<32>) 0x6f702032;
+        hdr.ipv4.dstAddr = (bit<32>) 0x30313921;
     }
 
     apply {
