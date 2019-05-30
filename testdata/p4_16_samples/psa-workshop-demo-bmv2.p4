@@ -63,7 +63,7 @@ parser IngressParserImpl(packet_in packet,
 {
     state start {
         packet.extract(hdr.ethernet);
-        packet.extract(hdr.ipv4);
+        // packet.extract(hdr.ipv4);
         transition accept;
     }
 }
@@ -127,16 +127,7 @@ control cEgress(inout headers_t hdr,
     }
 }
 
-control CommonDeparserImpl(packet_out packet,
-                           inout headers_t hdr)
-{
-    apply {
-        packet.emit(hdr.ethernet);
-        packet.emit(hdr.ipv4);
-    }
-}
-
-control IngressDeparserImpl(packet_out buffer,
+control IngressDeparserImpl(packet_out packet,
                             out empty_metadata_t clone_i2e_meta,
                             out empty_metadata_t resubmit_meta,
                             out empty_metadata_t normal_meta,
@@ -144,13 +135,12 @@ control IngressDeparserImpl(packet_out buffer,
                             in metadata_t meta,
                             in psa_ingress_output_metadata_t istd)
 {
-    CommonDeparserImpl() cp;
     apply {
-        cp.apply(buffer, hdr);
+        packet.emit(hdr.ethernet);
     }
 }
 
-control EgressDeparserImpl(packet_out buffer,
+control EgressDeparserImpl(packet_out packet,
                            out empty_metadata_t clone_e2e_meta,
                            out empty_metadata_t recirculate_meta,
                            inout headers_t hdr,
@@ -158,9 +148,9 @@ control EgressDeparserImpl(packet_out buffer,
                            in psa_egress_output_metadata_t istd,
                            in psa_egress_deparser_input_metadata_t edstd)
 {
-    CommonDeparserImpl() cp;
     apply {
-        cp.apply(buffer, hdr);
+        packet.emit(hdr.ethernet);
+        packet.emit(hdr.ipv4);
     }
 }
 

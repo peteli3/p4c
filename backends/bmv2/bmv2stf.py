@@ -641,13 +641,33 @@ class RunBMV2(object):
             if self.options.verbose:
                 print("Running", " ".join(runcli))
 
+
+            cmds = list()
+            while True:
+                line = raw_input("\n-> prompt: ")
+                if line == "break":
+                    cmds.append('\n')
+                    break
+                cmds.append(line)
+
             try:
                 cli = subprocess.Popen(runcli, cwd=self.folder, stdin=subprocess.PIPE)
                 self.cli_stdin = cli.stdin
-                with open(self.stffile) as i:
-                    for line in i:
-                        line, comment = nextWord(line, "#")
-                        self.do_command(line)
+
+                # with open(self.stffile) as i:
+                #     for line in i:
+                #         # print("working on {}".format(line))
+                #         # print(type(line))
+                #         line, comment = nextWord(line, "#")
+                #         print('doing cmd {}$\n'.format(line))
+                #         self.do_command(line)
+
+                for line in cmds:
+                    if line == '\n':
+                        break
+                    line, comment = nextWord(line, "#")
+                    self.do_command(line)
+
                 cli.stdin.close()
                 for interface, fp in self.interfaces.iteritems():
                     fp.close()
@@ -684,6 +704,9 @@ class RunBMV2(object):
     def comparePacket(self, expected, received):
         received = convert_packet_bin2hexstr(received)
         expected = convert_packet_stf2hexstr(expected)
+
+        print('\n    -> received pkt decoded: {}'.format(received.decode('hex')))
+
         strict_length_check = False
         if expected[-1] == '$':
             strict_length_check = True
